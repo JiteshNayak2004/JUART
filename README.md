@@ -1,7 +1,17 @@
 # UART
 uart protocol implementation in systemverilog
+
+## usage
+- For communication between microcontrollers
+- For communication between microcontrollers and a computer (for debugging or sending commands)
+
+## features
+- serial data transfer
+- full duplex (data can be sent from sender to reciever and vice versa)
+  ![image](https://github.com/JiteshNayak2004/UART/assets/117510555/ada99604-e93f-42fd-befa-87a4b7d6934d)
+
 ## protocol
-- ```uart data frame``` 
+### UART data packet 
 ![image](https://github.com/JiteshNayak2004/UART/assets/117510555/56968351-72a4-464f-94fe-1195048b512c)
 - A ```start bit``` indicates start of packet
   - The default ```HIGH``` level is pulled down to ```LOW``` for one clock cycle
@@ -42,3 +52,7 @@ recieved_data  |     the bus of data that is recieved
 clk          |     input data to be sent
 ready_recieve          |     signal indicating the reciever is ready to recieve
 
+## credits and references
+1) [Analog Devices](https://www.analog.com/en/analog-dialogue/articles/uart-a-hardware-communication-protocol.html#:~:text=By%20definition%2C%20UART%20is%20a,going%20to%20the%20receiving%20end.)
+2) [NandLand implementation](https://www.nandland.com/vhdl/modules/module-uart-serial-port-rs232.html)
+3) https://github.com/Ashwin-Rajesh/Verilog_comm
