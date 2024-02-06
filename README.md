@@ -1,5 +1,5 @@
 # UART
-uart protocol implementation in systemverilog
+uart protocol implementation in systemverilog using 2 process fsm style
 
 ## usage
 - For communication between microcontrollers
