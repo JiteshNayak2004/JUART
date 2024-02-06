@@ -33,7 +33,8 @@ clk          |     clk to the modules
 next_d_ready          |     signal indicating whether next data packet can be sent
 tx_op          |     1 bit data to be sent
 
-- for reciever
+- for reciever,
+  
 Name of port | function
 :------------:|:-------------------------:
 rx_b   |    bit recieved
