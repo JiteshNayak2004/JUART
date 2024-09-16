@@ -1,5 +1,6 @@
 
 module uart_rx
+
 #(parameter data_len=15,
   parameter clk_div=100 // basically tells us it takes 100 clock cycles to transmit 1 bit
   )

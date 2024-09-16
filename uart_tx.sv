@@ -1,129 +1,100 @@
-
 module uart_tx
-#(parameter data_len=15,
-  parameter clk_div=100 // basically tells us it takes 100 clock cycles to transmit 1 bit
-  )
+#(parameter DATA_LEN = 8,
+  parameter CLK_DIV = 100 // Number of clock cycles to transmit 1 bit
+)
 (
-    input logic data[data_len-1:0],
+    input logic [DATA_LEN-1:0] data,
     input logic send_en,
     input logic clk,
-
+    input logic rst_n,  // Added reset signal
     output logic next_d_ready,
     output logic tx_op
-    
 );
 
+// Number of bits needed to represent DATA_LEN and CLK_DIV
+localparam DATA_WIDTH = $clog2(DATA_LEN);
+localparam CLK_WIDTH = $clog2(CLK_DIV);
 
-// no of bits needed to represent data_len and clk_div of given size
-localparam DATA_WIDTH=$clog2(data_len);
-localparam CLK_WIDTH=$clog2(clk_div);
+// States of the FSM
+typedef enum logic [1:0] {
+    S_IDLE  = 2'b00,
+    S_START = 2'b01,
+    S_DATA  = 2'b10,
+    S_STOP  = 2'b11
+} state_t;
 
-// states of the fsm
-typedef enum logic [2:0]
-{S_IDLE =3'b000,
-S_START=3'b001,
-S_DATA=3'b010,
-S_STOP=3'b100 } state;
- 
-// defining the current state and the next state vars 
-state curr_state,next_state;
+// Defining the current state and the next state variables
+state_t curr_state, next_state;
 
 // Store clock count (for synchronization)
-logic [CLK_WIDTH-1:0]  clk_count = 0;       
+logic [CLK_WIDTH-1:0] clk_count;
 // Store bit currently being sent
-logic [DATA_WIDTH-1:0] bit_count = 0;  
+logic [DATA_WIDTH-1:0] bit_count;
 
+// Telling controller that we're ready to send the next data block
+assign next_d_ready = (curr_state == S_IDLE);
 
-// telling controller that ready to send the next data block
-assign next_d_ready=(curr_state==S_IDLE);
-
-
-//state register
-always_ff @( posedge clk ) 
-begin
-curr_state<=next_state; 
-end
-//next state logic
-
-always_comb 
-begin
-    case(curr_state)
-
-    S_IDLE:begin
-        clk_count=0;
-        bit_count=0;
-        if(send_en==1'b1)
-        begin
-            next_state=S_START;
-            
-        end
-        else next_state=S_IDLE;
-    end
+// State register
+always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        curr_state <= S_IDLE;
+        clk_count <= '0;
+        bit_count <= '0;
+    end else begin
+        curr_state <= next_state;
         
-    S_START:begin
-        if(clk_count<clk_div-1)
-        begin
-            clk_count=clk_count+1;
-            next_state=S_START;
+        if (curr_state != next_state) begin
+            clk_count <= '0;
+        end else if (clk_count < CLK_DIV - 1) begin
+            clk_count <= clk_count + 1;
         end
-        else 
-        clk_count=0;
-        next_state=S_DATA;
 
+        if (curr_state == S_DATA && clk_count == CLK_DIV - 1) begin
+            if (bit_count < DATA_LEN - 1) begin
+                bit_count <= bit_count + 1;
+            end else begin
+                bit_count <= '0;
+            end
+        end
     end
-
-    S_DATA:begin
-        if(clk_count<clk_div-1)
-            begin
-                clk_count=clk_count+1;
-                next_state=S_DATA;
-            end
-        else
-            clk_count=0;
-            if(bit_count<data_len-1)
-                begin
-                    bit_count=bit_count+1;
-                end
-            else
-                begin
-                    next_state=S_STOP;
-                    bit_count=0;
-                end            
-    end
-    
-    S_STOP:begin
-        if(clk_count<clk_div-1)
-            begin
-                clk_count=clk_count+1;
-                next_state=S_STOP;
-            end
-        else
-            begin
-                clk_count=0;
-                next_state=S_IDLE;
-            end
-    end 
-
-   
-    endcase
-
 end
-    
 
-// output logic
-always_comb 
-begin
-    case(curr_state)
-    S_IDLE:tx_op=1'b1;
-    S_START:tx_op=1'b0;
-    S_DATA:tx_op=data[bit_count];
-    S_STOP:tx_op=1'b1;
+// Next state logic
+always_comb begin
+    next_state = curr_state;  // Default: stay in current state
     
+    case (curr_state)
+        S_IDLE: begin
+            if (send_en)
+                next_state = S_START;
+        end
+        
+        S_START: begin
+            if (clk_count == CLK_DIV - 1)
+                next_state = S_DATA;
+        end
+        
+        S_DATA: begin
+            if (clk_count == CLK_DIV - 1 && bit_count == DATA_LEN - 1)
+                next_state = S_STOP;
+        end
+        
+        S_STOP: begin
+            if (clk_count == CLK_DIV - 1)
+                next_state = S_IDLE;
+        end
     endcase
-    
 end
-    
 
-
+// Output logic
+always_comb begin
+    case (curr_state)
+        S_IDLE:  tx_op = 1'b1;
+        S_START: tx_op = 1'b0;
+        S_DATA:  tx_op = data[bit_count];
+        S_STOP:  tx_op = 1'b1;
+        default: tx_op = 1'b1;
+    endcase
+end
 
 endmodule
