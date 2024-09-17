@@ -1,21 +1,23 @@
 # UART
 uart protocol implementation in systemverilog using 2 process fsm style
 
-## usage
-- For communication between microcontrollers
-- For communication between microcontrollers and a computer (for debugging or sending commands)
+# stuff i figured out
 
-## features
-- serial data transfer
-- full duplex (data can be sent from sender to reciever and vice versa)
-  ![image](https://github.com/JiteshNayak2004/UART/assets/117510555/ada99604-e93f-42fd-befa-87a4b7d6934d)
+- as soon as the high line becomes low we count till half the start bit period and uske baad we reset 
+and count 1 bit period this causes us to sample the value at the midpoint of every bit
+
+- stop bit is important as it gives the reciever a while to prepare for the next dataframe also a question 
+that i always had was how does the reciever figure out it was a stop bit or a data bit basically as both
+the tx and rx know the packet format the reciever counts the no of btis it has got and then checks for stop
+bit if the stop bit is say 0 it indicates a framing error
 
 ## protocol
 ### UART data packet 
 ![image](https://github.com/JiteshNayak2004/UART/assets/117510555/56968351-72a4-464f-94fe-1195048b512c)
 - A ```start bit``` indicates start of packet
   - The default ```HIGH``` level is pulled down to ```LOW``` for one clock cycle
-  - The receiving UART detects the transition and prepares to read the subsequent bits
+  - The receiving UART detects the transition and start's counting till half the baud period and then resets 
+  and prepares to read the subsequent bits in intervals of baud period this allows to sample all the bits at the center
 
 - The ```data frame``` holds the actual data. It can be 5 to 8 bits long if the parity bit is used, or 9 bits long if parity is not used.
   - LSB first
